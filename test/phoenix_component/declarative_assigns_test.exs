@@ -1208,7 +1208,7 @@ defmodule Phoenix.ComponentDeclarativeAssignsTest do
 
   test "raise if attr is declared after embed_templates function" do
     msg =
-      ~r"attributes must be defined before the first function clause.*The function was defined by the template \"my_component.html.heex\" via embed_templates"
+      ~r"attributes must be defined before the first function clause.*generated from the template \"my_component.html.heex\" by embed_templates.*bodyless function head"
 
     assert_raise CompileError, msg, fn ->
       defmodule Phoenix.ComponentTest.AttrAfterEmbedTemplate do
@@ -1224,7 +1224,7 @@ defmodule Phoenix.ComponentDeclarativeAssignsTest do
 
   test "raise if slot is declared after embed_templates function" do
     msg =
-      ~r"slots must be defined before the first function clause.*The function was defined by the template \"my_component.html.heex\" via embed_templates"
+      ~r"slots must be defined before the first function clause.*generated from the template \"my_component.html.heex\" by embed_templates.*bodyless function head"
 
     assert_raise CompileError, msg, fn ->
       defmodule Phoenix.ComponentTest.SlotAfterEmbedTemplate do
