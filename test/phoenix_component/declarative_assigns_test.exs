@@ -1206,6 +1206,38 @@ defmodule Phoenix.ComponentDeclarativeAssignsTest do
     end
   end
 
+  test "raise if attr is declared after embed_templates function" do
+    msg =
+      ~r"attributes must be defined before the first function clause.*The function was defined by the template \"my_component.html.heex\" via embed_templates"
+
+    assert_raise CompileError, msg, fn ->
+      defmodule Phoenix.ComponentTest.AttrAfterEmbedTemplate do
+        use Elixir.Phoenix.Component
+
+        embed_templates "templates/*"
+
+        attr :name, :string, required: true
+        def my_component(assigns), do: ~H[]
+      end
+    end
+  end
+
+  test "raise if slot is declared after embed_templates function" do
+    msg =
+      ~r"slots must be defined before the first function clause.*The function was defined by the template \"my_component.html.heex\" via embed_templates"
+
+    assert_raise CompileError, msg, fn ->
+      defmodule Phoenix.ComponentTest.SlotAfterEmbedTemplate do
+        use Elixir.Phoenix.Component
+
+        embed_templates "templates/*"
+
+        slot :inner_block
+        def my_component(assigns), do: ~H[]
+      end
+    end
+  end
+
   test "raise if attr is declared on an invalid function" do
     msg =
       ~r"cannot declare attributes for function func\/2\. Components must be functions with arity 1"
