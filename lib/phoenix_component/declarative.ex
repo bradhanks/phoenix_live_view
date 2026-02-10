@@ -1085,43 +1085,50 @@ defmodule Phoenix.Component.Declarative do
   defp raise_if_function_already_defined!(env, name, slots, attrs) do
     if Module.defines?(env.module, {name, 1}) do
       {:v1, _, meta, clauses} = Module.get_definition(env.module, {name, 1})
-      hint = template_hint(env.file, name, clauses)
 
       with [%{line: first_attr_line} | _] <- attrs do
-        compile_error!(first_attr_line, env.file, """
-        attributes must be defined before the first function clause at line #{meta[:line]}#{hint}\
-        """)
+        compile_error!(first_attr_line, env.file,
+          already_defined_message(:attributes, name, meta, clauses, env.file)
+        )
       end
 
       with [%{line: first_slot_line} | _] <- slots do
-        compile_error!(first_slot_line, env.file, """
-        slots must be defined before the first function clause at line #{meta[:line]}#{hint}\
-        """)
+        compile_error!(first_slot_line, env.file,
+          already_defined_message(:slots, name, meta, clauses, env.file)
+        )
       end
     end
   end
 
-  defp template_hint(module_file, _name, clauses) do
-    template =
-      Enum.find_value(clauses, fn {clause_meta, _, _, _} ->
-        file = extract_file(clause_meta[:file])
+  defp already_defined_message(kind, name, meta, clauses, module_file) do
+    base = "#{kind} must be defined before the first function clause at line #{meta[:line]}"
 
-        if file && file != to_string(module_file) && String.ends_with?(file, ".heex") do
-          Path.basename(file)
-        end
-      end)
+    case find_template_source(clauses, module_file) do
+      nil ->
+        base
 
-    if template do
-      ". The function was defined by the template #{inspect(template)} via embed_templates. " <>
-        "Either remove the template or the function definition"
-    else
-      ""
+      template ->
+        base <>
+          ". The function #{name}/1 was generated from the template #{inspect(template)}" <>
+          " by embed_templates. You must either remove the template" <>
+          " or define a bodyless function head: `def #{name}(assigns)`"
     end
   end
 
-  defp extract_file({file, _line_offset}) when is_binary(file), do: file
-  defp extract_file(file) when is_binary(file), do: file
-  defp extract_file(_), do: nil
+  defp find_template_source(clauses, module_file) do
+    Enum.find_value(clauses, fn {clause_meta, _, _, _} ->
+      file =
+        case clause_meta[:file] do
+          {path, _} when is_binary(path) -> path
+          path when is_binary(path) -> path
+          _ -> nil
+        end
+
+      if file && file != module_file && String.ends_with?(file, ".heex") do
+        Path.basename(file)
+      end
+    end)
+  end
 
   # Verification
 
