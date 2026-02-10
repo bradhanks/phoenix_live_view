@@ -1084,21 +1084,44 @@ defmodule Phoenix.Component.Declarative do
 
   defp raise_if_function_already_defined!(env, name, slots, attrs) do
     if Module.defines?(env.module, {name, 1}) do
-      {:v1, _, meta, _} = Module.get_definition(env.module, {name, 1})
+      {:v1, _, meta, clauses} = Module.get_definition(env.module, {name, 1})
+      hint = template_hint(env.file, name, clauses)
 
       with [%{line: first_attr_line} | _] <- attrs do
         compile_error!(first_attr_line, env.file, """
-        attributes must be defined before the first function clause at line #{meta[:line]}
+        attributes must be defined before the first function clause at line #{meta[:line]}#{hint}\
         """)
       end
 
       with [%{line: first_slot_line} | _] <- slots do
         compile_error!(first_slot_line, env.file, """
-        slots must be defined before the first function clause at line #{meta[:line]}
+        slots must be defined before the first function clause at line #{meta[:line]}#{hint}\
         """)
       end
     end
   end
+
+  defp template_hint(module_file, _name, clauses) do
+    template =
+      Enum.find_value(clauses, fn {clause_meta, _, _, _} ->
+        file = extract_file(clause_meta[:file])
+
+        if file && file != to_string(module_file) && String.ends_with?(file, ".heex") do
+          Path.basename(file)
+        end
+      end)
+
+    if template do
+      ". The function was defined by the template #{inspect(template)} via embed_templates. " <>
+        "Either remove the template or the function definition"
+    else
+      ""
+    end
+  end
+
+  defp extract_file({file, _line_offset}) when is_binary(file), do: file
+  defp extract_file(file) when is_binary(file), do: file
+  defp extract_file(_), do: nil
 
   # Verification
 
