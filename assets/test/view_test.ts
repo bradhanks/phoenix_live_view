@@ -1157,6 +1157,52 @@ describe("View", function () {
     expect(view.binding("submit")).toEqual("phx-submit");
   });
 
+  test("extractMeta prefers phx-value-* over native el.value", async () => {
+    liveSocket = new LiveSocket("/live", Socket);
+    const el = liveViewDOM();
+    const view = simulateJoinedView(el, liveSocket);
+
+    // <li> elements have a native .value property (HTMLLIElement.value defaults to 0)
+    const li = document.createElement("li");
+    li.setAttribute("phx-value-value", "2025");
+    const meta = view.extractMeta(li, undefined, undefined);
+    expect(meta.value).toEqual("2025");
+  });
+
+  test("extractMeta prefers phx-value-* over input el.value", async () => {
+    liveSocket = new LiveSocket("/live", Socket);
+    const el = liveViewDOM();
+    const view = simulateJoinedView(el, liveSocket);
+
+    const input = document.createElement("input");
+    input.value = "typed text";
+    input.setAttribute("phx-value-value", "attr-val");
+    const meta = view.extractMeta(input, undefined, undefined);
+    expect(meta.value).toEqual("attr-val");
+  });
+
+  test("extractMeta includes native el.value when no phx-value-value is set", async () => {
+    liveSocket = new LiveSocket("/live", Socket);
+    const el = liveViewDOM();
+    const view = simulateJoinedView(el, liveSocket);
+
+    const input = document.createElement("input");
+    input.value = "typed text";
+    const meta = view.extractMeta(input, undefined, undefined);
+    expect(meta.value).toEqual("typed text");
+  });
+
+  test("extractMeta JS.push value overrides phx-value-*", async () => {
+    liveSocket = new LiveSocket("/live", Socket);
+    const el = liveViewDOM();
+    const view = simulateJoinedView(el, liveSocket);
+
+    const btn = document.createElement("button");
+    btn.setAttribute("phx-value-id", "from-attr");
+    const meta = view.extractMeta(btn, undefined, {id: "from-push"});
+    expect(meta.id).toEqual("from-push");
+  });
+
   test("getSession", async () => {
     liveSocket = new LiveSocket("/live", Socket);
     const el = liveViewDOM();
