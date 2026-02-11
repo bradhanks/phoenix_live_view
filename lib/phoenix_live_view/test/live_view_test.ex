@@ -1218,6 +1218,14 @@ defmodule Phoenix.LiveViewTest do
   make sure the data you are changing/submitting actually exists, failing
   otherwise.
 
+  When a form is submitted or changed via `render_submit/2` or `render_change/2`,
+  all existing values from the form's rendered HTML are collected first. The
+  data passed to `form/3` is then deep-merged on top, overriding only the
+  fields you specify. This means you only need to provide the fields you want
+  to change, not the entire form. Nested parameters are merged recursively,
+  so providing `%{address: %{city: "NYC"}}` will override only the `city`
+  field while preserving other address fields.
+
   ## Examples
 
       assert view
@@ -1225,8 +1233,8 @@ defmodule Phoenix.LiveViewTest do
             |> render_submit() =~ "Name updated"
 
   This function is meant to mimic what the user can actually do, so you cannot
-   set hidden input values. However, hidden values can be given when calling
-   `render_submit/2` or `render_change/2`, see their docs for examples.
+  set hidden input values. However, hidden values can be given when calling
+  `render_submit/2` or `render_change/2`, see their docs for examples.
   """
   def form(%View{proxy: proxy}, selector, form_data \\ %{}) when is_binary(selector) do
     %Element{proxy: proxy, selector: selector, form_data: form_data}
