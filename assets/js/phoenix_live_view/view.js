@@ -1534,15 +1534,10 @@ export default class View {
 
   extractMeta(el, meta, value) {
     const prefix = this.binding("value-");
-    for (let i = 0; i < el.attributes.length; i++) {
-      if (!meta) {
-        meta = {};
-      }
-      const name = el.attributes[i].name;
-      if (name.startsWith(prefix)) {
-        meta[name.replace(prefix, "")] = el.getAttribute(name);
-      }
-    }
+    // Precedence: JS.push value > phx-value-* > el.value
+    // el.value is set first so that phx-value-* attributes can override it.
+    // This matters for elements like <li>, <meter>, <progress> which have
+    // native .value properties unrelated to user input.
     if (el.value !== undefined && !(el instanceof HTMLFormElement)) {
       if (!meta) {
         meta = {};
@@ -1555,6 +1550,15 @@ export default class View {
         !el.checked
       ) {
         delete meta.value;
+      }
+    }
+    for (let i = 0; i < el.attributes.length; i++) {
+      if (!meta) {
+        meta = {};
+      }
+      const name = el.attributes[i].name;
+      if (name.startsWith(prefix)) {
+        meta[name.replace(prefix, "")] = el.getAttribute(name);
       }
     }
     if (value) {
